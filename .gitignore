@@ -1,0 +1,8 @@
+*.egg-info/
+__pycache__/
+
+# PyCharm
+.idea/
+
+# OS X
+.DS_Store
