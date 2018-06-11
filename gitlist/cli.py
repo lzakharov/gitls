@@ -38,11 +38,14 @@ def get_url(repository):
     return out.decode().strip()
 
 
-def get_status(repository):
+def get_status(repository, verbose=False):
     """Returns repository status for specified repository."""
     process = subprocess.Popen(['git', 'status', '--porcelain'], cwd=repository.path,
                                stdout=subprocess.PIPE)
     out, err = process.communicate()
+
+    if verbose and out:
+        print(out.decode().strip())
 
     if not out:
         return Status.UP_TO_DATE
@@ -56,6 +59,8 @@ def main():
                         help='where to find repositories (default: current directory)')
     parser.add_argument('-u', '--url', type=str, nargs='?', default=False, const=True,
                         help='show repository urls (default: False)')
+    parser.add_argument('-v', '--verbose', type=str, nargs='?', default=False, const=True,
+                        help='show verbose information (default: False)')
     args = parser.parse_args()
 
     repositories = sorted(find_repositories(args.dir))
@@ -63,7 +68,7 @@ def main():
     for repository in repositories:
         name = repository.name
         path = repository.path
-        status = STATUS_SYMBOL[get_status(repository)]
+        status = STATUS_SYMBOL[get_status(repository, args.verbose)]
         line = f'{status} {name:20} ({path})'
 
         if args.url:
