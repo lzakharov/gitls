@@ -2,12 +2,25 @@ import os
 import subprocess
 import argparse
 from collections import namedtuple
+from enum import Enum
 from pathlib import Path
 
 DESCRIPTION = '''Print all local git repositories.'''
 GIT_DIR = '.git'
 
 Repository = namedtuple('Repository', ['name', 'path'])
+
+
+class Status(Enum):
+    """Repository statuses."""
+    UP_TO_DATE = 0
+    MODIFIED = 1
+
+
+STATUS_SYMBOL = {
+    Status.UP_TO_DATE: '\u2705',
+    Status.MODIFIED: '\u2757'
+}
 
 
 def find_repositories(path):
@@ -19,9 +32,22 @@ def find_repositories(path):
 
 def get_url(repository):
     """Returns url for specified repository."""
-    process = subprocess.Popen(['git', 'remote', 'get-url', 'origin'], stdout=subprocess.PIPE)
+    process = subprocess.Popen(['git', 'remote', 'get-url', 'origin'], cwd=repository.path,
+                               stdout=subprocess.PIPE)
     out, err = process.communicate()
     return out.decode().strip()
+
+
+def get_status(repository):
+    """Returns repository status for specified repository."""
+    process = subprocess.Popen(['git', 'status', '--porcelain'], cwd=repository.path,
+                               stdout=subprocess.PIPE)
+    out, err = process.communicate()
+
+    if not out:
+        return Status.UP_TO_DATE
+
+    return Status.MODIFIED
 
 
 def main():
@@ -37,11 +63,12 @@ def main():
     for repository in repositories:
         name = repository.name
         path = repository.path
-        line = f'{name} {path}'
+        status = STATUS_SYMBOL[get_status(repository)]
+        line = f'{status} {name:20} ({path})'
 
         if args.url:
             url = get_url(repository)
-            line += f' {url}'
+            line += f' [{url}]'
 
         print(line)
 
